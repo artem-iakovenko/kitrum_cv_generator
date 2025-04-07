@@ -71,7 +71,7 @@ class CrmEntity:
         drive_folder_url = self.crm_record_details['Drive_Folder_URL']
         first_name = self.crm_record_details['First_Name']
         last_name = self.crm_record_details['Last_Name']
-        employee_name = f"{first_name} {last_name}"
+        employee_name = f"{first_name} {last_name[0]}."
         seniority_cv = self.crm_record_details['Seniority'] or ""
         title_cv = self.crm_record_details['Title']
         direction = self.crm_record_details['Direction']
@@ -149,13 +149,13 @@ class CrmEntity:
             finish_date = work_experience['Finish_date']
             company = work_experience['Company_Name']
             position = work_experience['Position']
-            project_name_and_description = work_experience['Project_name_and_description']
-
-
-            project_name = project_name_and_description.split("\n")[0] if '\n' in project_name_and_description else project_name_and_description
+            project_name_and_description = work_experience['Project_name_and_description'].strip() if work_experience['Project_name_and_description'] else ""
 
             project_domain = work_experience['Project_domain']
-            project_duration = get_date_difference(start_date, finish_date or datetime.today().strftime("%Y-%m-%d"))
+            try:
+                project_duration = get_date_difference(start_date, finish_date or datetime.today().strftime("%Y-%m-%d"))
+            except TypeError:
+                project_duration = None
             project_structure = work_experience['Team_Structure']
             project_tech_stack = work_experience['Project_tech_stack']
             project_responsibilities_cv = []
@@ -179,8 +179,8 @@ class CrmEntity:
                 "to": datetime.strptime(finish_date, "%Y-%m-%d").strftime("%b. %Y") if finish_date else 'present',
                 "company": company,
                 "position": position,
-                "project_name": project_name_and_description.split("\n")[0].replace(".", ""),
-                "project_description": project_name_and_description.replace(f"{project_name}\n", ""),
+                "project_name": project_name_and_description,
+                "project_description": "",
                 "project_domain": project_domain or '__empty__',
                 "project_duration": project_duration or '__empty__',
                 "project_team_structure": project_structure or '__empty__',
@@ -301,8 +301,8 @@ class CurriculumVitae:
                 "__databases__": ", ".join(self.user_details['skills']['databases']),
                 "__cloud__": ", ".join(self.user_details['skills']['cloud']),
                 "__domains__": ", ".join(self.user_details['skills']['domains']),
-                "__university__": self.user_details['education'][0]['university'],
-                "__specialization__": self.user_details['education'][0]['specialization']
+                "__university__": self.user_details['education'][0]['university'] if self.user_details['education'] else "",
+                "__specialization__": self.user_details['education'][0]['specialization'] if self.user_details['education'] else "",
             }
         elif self.entity_type == "admin":
             self.variables_mapping = {
@@ -314,8 +314,8 @@ class CurriculumVitae:
                 "__tools__": ", ".join(self.user_details['skills']['tools']),
                 "__additional_skills__": self.user_details['skills']['additional_skills'],
                 "__domains__": ", ".join(self.user_details['skills']['domains']),
-                "__university__": self.user_details['education'][0]['university'],
-                "__specialization__": self.user_details['education'][0]['specialization']
+                "__university__": self.user_details['education'][0]['university'] if self.user_details['education'] else "",
+                "__specialization__": self.user_details['education'][0]['specialization'] if self.user_details['education'] else ""
             }
         elif self.entity_type == "designer":
             self.variables_mapping = {
@@ -328,8 +328,8 @@ class CurriculumVitae:
                 "__other_tools__": self.user_details['skills']['additional_tools'],
                 "__additional_skills__": self.user_details['skills']['additional_skills'],
                 "__domains__": ", ".join(self.user_details['skills']['domains']),
-                "__university__": self.user_details['education'][0]['university'],
-                "__specialization__": self.user_details['education'][0]['specialization']
+                "__university__": self.user_details['education'][0]['university'] if self.user_details['education'] else "",
+                "__specialization__": self.user_details['education'][0]['specialization'] if self.user_details['education'] else ""
             }
 
     def map_experience(self, experience):
@@ -562,10 +562,19 @@ class CurriculumVitae:
                 content_row = table.rows[1]
                 education_section = content_row.cells[0]
                 certificates_section = content_row.cells[2]
+                education_section_panel = education_section.paragraphs
                 certificates_section_panel = certificates_section.paragraphs
-                if not certificates_section_panel:
+                if education_section_panel and not certificates_section_panel:
                     certificates_section.text = ""
                     education_section.merge(certificates_section)
+                elif not education_section_panel and certificates_section_panel:
+                    education_section.text = ""
+                    certificates_section.merge(education_section)
+                elif not education_section_panel and not certificates_section_panel:
+                    print("BOTH SECTIONS ARE EMPTY")
+                    table_element = table._element
+                    table_element.getparent().remove(table_element)
+                    break
 
     def merge_skills(self):
         for table in self.cv_doc.tables:
@@ -737,10 +746,6 @@ class DriveConverter:
             except Exception as e:
                 pass
     def convert_docx_to_pdf(self):
-        # drive_scopes = ["https://www.googleapis.com/auth/drive"]
-        # creds = Credentials.from_authorized_user_file("credentials/gdrive/token.json", drive_scopes)
-        # creds.refresh(Request())
-        # self.service = build("drive", "v3", credentials=creds)
         if not self.drive_folder_url:
             drive_folder_id = self.create_google_drive_folder()
         else:
@@ -790,7 +795,6 @@ def cv_generator(crm_record_id):
         "result": new_file_ids,
         "duration": elapsed_time
     }
-
 
 # if __name__ == '__main__':
 #     results = cv_generator("1576533000404410047")
