@@ -71,6 +71,7 @@ class CrmEntity:
         drive_folder_url = self.crm_record_details['Drive_Folder_URL']
         first_name = self.crm_record_details['First_Name']
         last_name = self.crm_record_details['Last_Name']
+        employee_name_not_cropped = f"{first_name} {last_name}"
         employee_name = f"{first_name} {last_name[0]}."
         seniority_cv = self.crm_record_details['Seniority'] or ""
         title_cv = self.crm_record_details['Title']
@@ -81,7 +82,7 @@ class CrmEntity:
         elif direction in ['Design']:
             entity_type = 'designer'
 
-        location_cv = self.crm_record_details['Location']
+        location_cv = self.crm_record_details['Location'] or "-"
         experience_in_it = self.crm_record_details['Years_of_experience_decimal']
         experience_in_it_cv = "1 year" if experience_in_it == 1 else f"{self.crm_record_details['Years_of_experience_decimal']} years"
 
@@ -103,23 +104,29 @@ class CrmEntity:
 
         # top section
         if entity_type == "developer":
-            core_techs = [self.crm_record_details['Core_Technology_1'], self.crm_record_details['Core_Technology_2']]
-            additional_techs = self.crm_record_details['Additional_technologies'].split(", ")
-            tools = self.crm_record_details['Tools']
+            core_techs = []
+            if self.crm_record_details['Core_Technology_1']:
+                core_techs.append(self.crm_record_details['Core_Technology_1'])
+            if self.crm_record_details['Core_Technology_2']:
+                core_techs.append(self.crm_record_details['Core_Technology_2'])
+
+            additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
+            tools = self.crm_record_details['Tools'] if self.crm_record_details['Tools'] else ["-"]
             databases = self.crm_record_details['Database']
             cloud = self.crm_record_details['Cloud']
-            domains = self.crm_record_details['Has_experience_in_domains_New']
+            domains = self.crm_record_details['Has_experience_in_domains_New'] or []
+            subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
             skills_cv = {
                 "main_languages": core_techs,
                 "other_languages": additional_techs,
                 "tools": tools,
                 "databases": databases,
                 "cloud": cloud,
-                "domains": domains
+                "domains": (domains + subdomains) or ['-']
             }
         elif entity_type == "admin":
             tools = self.crm_record_details['Tools']
-            additional_skills = self.crm_record_details['Additional_Skills']
+            additional_skills = self.crm_record_details['Additional_Skills'] or "-"
             domains = self.crm_record_details['Has_experience_in_domains_New']
             skills_cv = {
                 "tools": tools,
@@ -128,10 +135,10 @@ class CrmEntity:
             }
         elif entity_type == "designer":
             tools = self.crm_record_details['Tools']
-            additional_tools = self.crm_record_details['Additional_Tools']
+            additional_tools = self.crm_record_details['Additional_Tools'] or "-"
             portfolio = self.crm_record_details['Portfolio_Designer']
             domains = self.crm_record_details['Has_experience_in_domains_New']
-            additional_skills = self.crm_record_details['Additional_Skills']
+            additional_skills = self.crm_record_details['Additional_Skills'] or "-"
             skills_cv = {
                 "tools": tools,
                 "additional_tools": additional_tools,
@@ -147,10 +154,9 @@ class CrmEntity:
         for work_experience in work_experiences:
             start_date = work_experience['Start_date']
             finish_date = work_experience['Finish_date']
-            company = work_experience['Company_Name']
+            company = work_experience['Company_Name'] or "Under NDA."
             position = work_experience['Position']
-            project_name_and_description = work_experience['Project_name_and_description'].strip() if work_experience['Project_name_and_description'] else ""
-
+            project_name_and_description = work_experience['Project_name_and_description'].strip() if work_experience['Project_name_and_description'] else "Under NDA."
             project_domain = work_experience['Project_domain']
             try:
                 project_duration = get_date_difference(start_date, finish_date or datetime.today().strftime("%Y-%m-%d"))
@@ -200,8 +206,8 @@ class CrmEntity:
                 })
             elif type_of_education == "Certification":
                 certifications_cv.append({
-                    "certificate_date": datetime.strptime(education['Final_date_of_graduation'], "%Y-%m-%d").strftime("%b. %Y"),
-                    "certificate_name": education['Degree_in_specialization']
+                    "certificate_date": datetime.strptime(education['Final_date_of_graduation'], "%Y-%m-%d").strftime("%b. %Y") if education['Final_date_of_graduation'] else "",
+                    "certificate_name": education['University_Certificate_name'] or education['Degree_in_specialization']
                 })
         languages_cv = {"English": english}
         for other_language in other_languages:
@@ -212,6 +218,7 @@ class CrmEntity:
             "cv_record_name": cv_record_name,
             "role": entity_type,
             "full_name": employee_name,
+            "full_name_not_cropped": employee_name_not_cropped,
             "seniority": seniority_cv,
             "position": title_cv,
             "location": location_cv,
@@ -230,7 +237,7 @@ class CrmEntity:
         self.parse_record_data()
         return self.cv_data
 
-    def update_cvs(self, file_ids):
+    def update_cvs(self, file_ids, error_details):
         cv_folder_id = file_ids['folder_id']
         cv_docx_id = file_ids['docx']
         cv_pdf_id = file_ids['docx']
@@ -241,13 +248,15 @@ class CrmEntity:
                     "CV_DOCX_URL": f"https://drive.google.com/file/d/{cv_docx_id}",
                     "CV_PDF_URL": f"https://drive.google.com/file/d/{cv_pdf_id}",
                     "CV_Generation_Date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S+01:00"),
-                    "CV_Generation_Status": "Success"
+                    "CV_Generation_Status": "Success",
+                    "Error_Details": ""
                 }
             ]}
         else:
             crm_update_data = {"data": [
                 {
-                    "CV_Generation_Status": "Error"
+                    "CV_Generation_Status": "Error",
+                    "Error_Details": error_details
                 }
             ]}
         response = api_request(
@@ -347,6 +356,7 @@ class CurriculumVitae:
         }
 
     def replace_text_preserving_formatting(self, old_text, new_text):
+
         for para in self.cv_doc.paragraphs:
             replace_in_paragraph(para, old_text, new_text)
         for table in self.cv_doc.tables:
@@ -550,7 +560,10 @@ class CurriculumVitae:
                         counter += 1
                         new_liner = "\n" if counter != 1 else ""
                         cell_paragraph = certificates_section.add_paragraph()
-                        run = cell_paragraph.add_run(f"{new_liner}{certification_date} - {certification_name}")
+                        if certification_date:
+                            run = cell_paragraph.add_run(f"{new_liner}{certification_date} - {certification_name}")
+                        else:
+                            run = cell_paragraph.add_run(f"{new_liner}{certification_name}")
                         run.bold = True
                         run.font.size = Pt(8)
                         cell_paragraph.paragraph_format.line_spacing = Pt(13.8)
@@ -658,7 +671,10 @@ class CurriculumVitae:
         self.merge_education()
         if self.entity_type == "designer" and self.user_details['skills']['portfolio']:
             portfolio_url = self.user_details['skills']['portfolio']
-            portfolio_source = urlparse(portfolio_url).hostname.replace('www.', '').split('.')[0].capitalize()
+            if 'drive.google.com' in portfolio_url:
+                portfolio_source = "Google Drive"
+            else:
+                portfolio_source = urlparse(portfolio_url).hostname.replace('www.', '').split('.')[0].capitalize()
             self.replace_hyperlink("https://www.behance.net/search/projects", portfolio_url, portfolio_source)
         elif self.entity_type == "designer" and not self.user_details['skills']['portfolio']:
             print("REMOVE PORTFOLIO")
@@ -766,8 +782,7 @@ def cv_generator(crm_record_id):
     start_time = time.time()
     crm_record_handler = CrmEntity(crm_record_id)
 
-
-
+    generation_error = ""
     try:
         drive_scopes = ["https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_authorized_user_file("credentials/gdrive/token.json", drive_scopes)
@@ -778,24 +793,44 @@ def cv_generator(crm_record_id):
         cv_handler = CurriculumVitae(drive_service, cv_data['role'], cv_data)
         print(f"\tInserting Data to DOCX Template")
         docx_cv_path = cv_handler.generate_cv()
-        converter = DriveConverter(drive_service, docx_cv_path, cv_data["cv_record_name"], cv_data["drive_folder_url"], cv_data['full_name'])
+        converter = DriveConverter(drive_service, docx_cv_path, cv_data["cv_record_name"], cv_data["drive_folder_url"], cv_data['full_name_not_cropped'])
         print(f"\tUploading DOCX to Google Drive and Converting to PDF")
         new_file_ids = converter.convert_docx_to_pdf()
     except Exception as e:
         print(f"\tError Occured: {e}")
         print(traceback.format_exc())
+        generation_error = traceback.format_exc()
         new_file_ids = {'docx': None, "pdf": None, "folder_id": None}
     print(f"\tCV Generation Completed. Results: {new_file_ids}")
     print(f"\tUploading Results to Zoho CRM")
-    crm_record_handler.update_cvs(new_file_ids)
+    crm_record_handler.update_cvs(new_file_ids, generation_error)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Time Taken to Generate CVs: {elapsed_time:.2f} seconds")
     return {
         "result": new_file_ids,
-        "duration": elapsed_time
+        "duration": elapsed_time,
+        "error": generation_error
     }
 
+
 # if __name__ == '__main__':
-#     results = cv_generator("1576533000404410047")
-#     print(results)
+#     cv_ids = [
+#         '1576533000404684909'
+#     ]
+#     logs = {}
+#     counter = 0
+#     for cv_id in cv_ids:
+#         counter += 1
+#         print(f"Counter: {counter}")
+#         try:
+#             results = cv_generator(cv_id)
+#             print(results)
+#             cvurl = results['result']['docx']
+#         except:
+#             cvurl = None
+#         logs[cv_id] = cvurl
+#         print("Short Pause...")
+#         time.sleep(5)
+#     print("LOGS: ")
+#     print(logs)
