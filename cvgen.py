@@ -83,8 +83,9 @@ class CrmEntity:
             entity_type = 'designer'
 
         location_cv = self.crm_record_details['Location'] or "-"
-        experience_in_it = self.crm_record_details['Years_of_experience_decimal']
-        experience_in_it_cv = "1 year" if experience_in_it == 1 else f"{self.crm_record_details['Years_of_experience_decimal']} years"
+
+        experience_in_it = int(round(self.crm_record_details['Years_of_experience_decimal'], 0))
+        experience_in_it_cv = "1 year" if experience_in_it == 1 else f"{experience_in_it} years"
 
         english = self.crm_record_details['English_Level']
         if not self.crm_record_details['Additional_languages']:
@@ -816,7 +817,7 @@ def cv_generator(crm_record_id):
 
 # if __name__ == '__main__':
 #     cv_ids = [
-#         '1576533000404684909'
+#         '1576533000404736012'
 #     ]
 #     logs = {}
 #     counter = 0
