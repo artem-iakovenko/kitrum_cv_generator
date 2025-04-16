@@ -110,8 +110,14 @@ class CrmEntity:
                 core_techs.append(self.crm_record_details['Core_Technology_1'])
             if self.crm_record_details['Core_Technology_2']:
                 core_techs.append(self.crm_record_details['Core_Technology_2'])
+            if not self.crm_record_details['Additional_technologies']:
+                additional_techs = ['-']
+            else:
+                if "; " in self.crm_record_details['Additional_technologies']:
+                    additional_techs = self.crm_record_details['Additional_technologies'].split("; ") if self.crm_record_details['Additional_technologies'] else ["-"]
+                else:
+                    additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
 
-            additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
             tools = self.crm_record_details['Tools'] if self.crm_record_details['Tools'] else ["-"]
             databases = self.crm_record_details['Database']
             cloud = self.crm_record_details['Cloud']
@@ -127,26 +133,58 @@ class CrmEntity:
                 "domains": (domains + subdomains) or ['-']
             }
         elif entity_type == "admin":
-            tools = self.crm_record_details['Tools']
-            additional_skills = self.crm_record_details['Additional_Skills'] or "-"
+            core_techs = []
+            if self.crm_record_details['Core_Technology_1']:
+                core_techs.append(self.crm_record_details['Core_Technology_1'])
+            if self.crm_record_details['Core_Technology_2']:
+                core_techs.append(self.crm_record_details['Core_Technology_2'])
+
+            tools = self.crm_record_details['Tools'] or []
+            if not self.crm_record_details['Additional_Skills']:
+                additional_skills = ['-']
+            else:
+                if "; " in self.crm_record_details['Additional_Skills']:
+                    additional_skills = self.crm_record_details['Additional_Skills'].split("; ") or "-"
+                else:
+                    additional_skills = self.crm_record_details['Additional_Skills'].split(", ") or "-"
+
             domains = self.crm_record_details['Has_experience_in_domains_New']
             subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
             skills_cv = {
-                "tools": tools,
+                "tools": core_techs + tools,
                 "additional_skills": additional_skills,
                 "domains": (domains + subdomains) or ['-']
             }
         elif entity_type == "designer":
-            tools = self.crm_record_details['Tools']
-            additional_tools = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
-            # additional_tools = self.crm_record_details['Additional_Tools'] or "-"
+            core_techs = []
+            if self.crm_record_details['Core_Technology_1']:
+                core_techs.append(self.crm_record_details['Core_Technology_1'])
+            if self.crm_record_details['Core_Technology_2']:
+                core_techs.append(self.crm_record_details['Core_Technology_2'])
+
+            tools = self.crm_record_details['Tools'] or []
+
+            if not self.crm_record_details['Additional_technologies']:
+                additional_techs = ['-']
+            else:
+                if "; " in self.crm_record_details['Additional_technologies']:
+                    additional_techs = self.crm_record_details['Additional_technologies'].split("; ") if self.crm_record_details['Additional_technologies'] else ["-"]
+                else:
+                    additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
+
             portfolio = self.crm_record_details['Portfolio_Designer']
+            if not self.crm_record_details['Additional_Skills']:
+                additional_skills = ['-']
+            else:
+                if "; " in self.crm_record_details['Additional_Skills']:
+                    additional_skills = self.crm_record_details['Additional_Skills'].split("; ") or "-"
+                else:
+                    additional_skills = self.crm_record_details['Additional_Skills'].split(", ") or "-"
             domains = self.crm_record_details['Has_experience_in_domains_New']
-            additional_skills = self.crm_record_details['Additional_Skills'] or "-"
             subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
             skills_cv = {
-                "tools": tools,
-                "additional_tools": additional_tools,
+                "tools": core_techs + tools,
+                "additional_tools": additional_techs,
                 "additional_skills": additional_skills,
                 "domains":  (domains + subdomains) or ['-'],
                 "portfolio": portfolio
@@ -326,7 +364,7 @@ class CurriculumVitae:
                 "__location__": self.user_details['location'],
                 "__experience__": self.user_details['experience'],
                 "__tools__": ", ".join(self.user_details['skills']['tools']),
-                "__additional_skills__": self.user_details['skills']['additional_skills'],
+                "__additional_skills__": ", ".join(self.user_details['skills']['additional_skills']),
                 "__domains__": ", ".join(self.user_details['skills']['domains']),
                 "__university__": self.user_details['education'][0]['university'] if self.user_details['education'] else "",
                 "__specialization__": self.user_details['education'][0]['specialization'] if self.user_details['education'] else ""
@@ -340,7 +378,7 @@ class CurriculumVitae:
                 "__experience__": self.user_details['experience'],
                 "__tools__": ", ".join(self.user_details['skills']['tools']),
                 "__other_tools__": ", ".join(self.user_details['skills']['additional_tools']),
-                "__additional_skills__": self.user_details['skills']['additional_skills'],
+                "__additional_skills__": ", ".join(self.user_details['skills']['additional_skills']),
                 "__domains__": ", ".join(self.user_details['skills']['domains']),
                 "__university__": self.user_details['education'][0]['university'] if self.user_details['education'] else "",
                 "__specialization__": self.user_details['education'][0]['specialization'] if self.user_details['education'] else ""
@@ -821,7 +859,7 @@ def cv_generator(crm_record_id):
 
 # if __name__ == '__main__':
 #     cv_ids = [
-#         '1576533000413046001'
+#         '1576533000413046226'
 #     ]
 #     logs = {}
 #     counter = 0
