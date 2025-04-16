@@ -117,6 +117,7 @@ class CrmEntity:
             cloud = self.crm_record_details['Cloud']
             domains = self.crm_record_details['Has_experience_in_domains_New'] or []
             subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
+
             skills_cv = {
                 "main_languages": core_techs,
                 "other_languages": additional_techs,
@@ -129,22 +130,25 @@ class CrmEntity:
             tools = self.crm_record_details['Tools']
             additional_skills = self.crm_record_details['Additional_Skills'] or "-"
             domains = self.crm_record_details['Has_experience_in_domains_New']
+            subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
             skills_cv = {
                 "tools": tools,
                 "additional_skills": additional_skills,
-                "domains": domains
+                "domains": (domains + subdomains) or ['-']
             }
         elif entity_type == "designer":
             tools = self.crm_record_details['Tools']
-            additional_tools = self.crm_record_details['Additional_Tools'] or "-"
+            additional_tools = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
+            # additional_tools = self.crm_record_details['Additional_Tools'] or "-"
             portfolio = self.crm_record_details['Portfolio_Designer']
             domains = self.crm_record_details['Has_experience_in_domains_New']
             additional_skills = self.crm_record_details['Additional_Skills'] or "-"
+            subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
             skills_cv = {
                 "tools": tools,
                 "additional_tools": additional_tools,
                 "additional_skills": additional_skills,
-                "domains": domains,
+                "domains":  (domains + subdomains) or ['-'],
                 "portfolio": portfolio
             }
         else:
@@ -335,7 +339,7 @@ class CurriculumVitae:
                 "__location__": self.user_details['location'],
                 "__experience__": self.user_details['experience'],
                 "__tools__": ", ".join(self.user_details['skills']['tools']),
-                "__other_tools__": self.user_details['skills']['additional_tools'],
+                "__other_tools__": ", ".join(self.user_details['skills']['additional_tools']),
                 "__additional_skills__": self.user_details['skills']['additional_skills'],
                 "__domains__": ", ".join(self.user_details['skills']['domains']),
                 "__university__": self.user_details['education'][0]['university'] if self.user_details['education'] else "",
@@ -817,7 +821,7 @@ def cv_generator(crm_record_id):
 
 # if __name__ == '__main__':
 #     cv_ids = [
-#         '1576533000404736012'
+#         '1576533000413046001'
 #     ]
 #     logs = {}
 #     counter = 0
