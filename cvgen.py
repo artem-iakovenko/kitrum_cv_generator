@@ -111,12 +111,12 @@ class CrmEntity:
             if self.crm_record_details['Core_Technology_2']:
                 core_techs.append(self.crm_record_details['Core_Technology_2'])
             if not self.crm_record_details['Additional_technologies']:
-                additional_techs = ['-']
+                additional_techs = ""
             else:
                 if "; " in self.crm_record_details['Additional_technologies']:
-                    additional_techs = self.crm_record_details['Additional_technologies'].split("; ") if self.crm_record_details['Additional_technologies'] else ["-"]
+                    additional_techs = self.crm_record_details['Additional_technologies'].split("; ") if self.crm_record_details['Additional_technologies'] else ""
                 else:
-                    additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
+                    additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ""
 
             tools = self.crm_record_details['Tools'] if self.crm_record_details['Tools'] else ["-"]
             databases = self.crm_record_details['Database']
@@ -141,12 +141,12 @@ class CrmEntity:
 
             tools = self.crm_record_details['Tools'] or []
             if not self.crm_record_details['Additional_Skills']:
-                additional_skills = ['-']
+                additional_skills = []
             else:
                 if "; " in self.crm_record_details['Additional_Skills']:
-                    additional_skills = self.crm_record_details['Additional_Skills'].split("; ") or "-"
+                    additional_skills = self.crm_record_details['Additional_Skills'].split("; ") or ""
                 else:
-                    additional_skills = self.crm_record_details['Additional_Skills'].split(", ") or "-"
+                    additional_skills = self.crm_record_details['Additional_Skills'].split(", ") or ""
 
             domains = self.crm_record_details['Has_experience_in_domains_New']
             subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
@@ -165,21 +165,21 @@ class CrmEntity:
             tools = self.crm_record_details['Tools'] or []
 
             if not self.crm_record_details['Additional_technologies']:
-                additional_techs = ['-']
+                additional_techs = ""
             else:
                 if "; " in self.crm_record_details['Additional_technologies']:
-                    additional_techs = self.crm_record_details['Additional_technologies'].split("; ") if self.crm_record_details['Additional_technologies'] else ["-"]
+                    additional_techs = self.crm_record_details['Additional_technologies'].split("; ") if self.crm_record_details['Additional_technologies'] else ""
                 else:
-                    additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ["-"]
+                    additional_techs = self.crm_record_details['Additional_technologies'].split(", ") if self.crm_record_details['Additional_technologies'] else ""
 
             portfolio = self.crm_record_details['Portfolio_Designer']
             if not self.crm_record_details['Additional_Skills']:
-                additional_skills = ['-']
+                additional_skills = ""
             else:
                 if "; " in self.crm_record_details['Additional_Skills']:
-                    additional_skills = self.crm_record_details['Additional_Skills'].split("; ") or "-"
+                    additional_skills = self.crm_record_details['Additional_Skills'].split("; ") or ""
                 else:
-                    additional_skills = self.crm_record_details['Additional_Skills'].split(", ") or "-"
+                    additional_skills = self.crm_record_details['Additional_Skills'].split(", ") or ""
             domains = self.crm_record_details['Has_experience_in_domains_New']
             subdomains = self.crm_record_details['Has_experience_in_subdomains'] or []
             skills_cv = {
@@ -627,7 +627,6 @@ class CurriculumVitae:
                     education_section.text = ""
                     certificates_section.merge(education_section)
                 elif not education_section_panel and not certificates_section_panel:
-                    print("BOTH SECTIONS ARE EMPTY")
                     table_element = table._element
                     table_element.getparent().remove(table_element)
                     break
@@ -635,7 +634,7 @@ class CurriculumVitae:
     def merge_skills(self):
         for table in self.cv_doc.tables:
             table_header = table.rows[0].cells[0].paragraphs[0].text
-            if 'technical skills' in table_header.lower():
+            if 'technical skills' in table_header.lower() or 'core skills' in table_header.lower() :
                 if self.entity_type == "developer":
                     header_one_row = table.rows[1]
                     content_one_row = table.rows[2]
@@ -651,6 +650,16 @@ class CurriculumVitae:
                         databases_cell.text = ""
                         database_merge_cell.merge(databases_cell)
                         database_merge_header_cell.merge(database_header_cell)
+                    # MERGE ADDITIONAL TECHNOLOGIES IF EMPTY
+                    additional_technologies_merge_header_cell = header_one_row.cells[0]
+                    additional_technologies_header_cell = header_one_row.cells[1]
+                    additional_technologies_merge_cell = content_one_row.cells[0]
+                    additional_technologies_cell = content_one_row.cells[1]
+                    if not additional_technologies_cell.text:
+                        additional_technologies_header_cell.text = ""
+                        additional_technologies_cell.text = ""
+                        additional_technologies_merge_cell.merge(additional_technologies_cell)
+                        additional_technologies_merge_header_cell.merge(additional_technologies_header_cell)
                     # MERGE CLOUD IF EMPTY
                     cloud_merge_header_cell = header_two_row.cells[1]
                     cloud_header_cell = header_two_row.cells[0]
@@ -661,6 +670,48 @@ class CurriculumVitae:
                         cloud_cell.text = ""
                         cloud_merge_cell.merge(cloud_cell)
                         cloud_merge_header_cell.merge(cloud_header_cell)
+                elif self.entity_type == "designer":
+                    header_one_row = table.rows[1]
+                    content_one_row = table.rows[2]
+                    additional_technologies_cell = content_one_row.cells[1]
+                    additional_skills_cell = content_one_row.cells[2]
+                    if not additional_skills_cell.text and not additional_technologies_cell.text:
+                        additional_skills_merge_header_cell = header_one_row.cells[1]
+                        additional_skills_header_cell = header_one_row.cells[2]
+                        additional_skills_merge_cell = content_one_row.cells[1]
+                        additional_skills_header_cell.text = ""
+                        additional_skills_cell.text = ""
+                        additional_skills_merge_cell.merge(additional_skills_cell)
+                        additional_skills_merge_header_cell.merge(additional_skills_header_cell)
+                        additional_technologies_merge_header_cell = header_one_row.cells[0]
+                        additional_technologies_header_cell = header_one_row.cells[1]
+                        additional_technologies_merge_cell = content_one_row.cells[0]
+                        additional_technologies_cell = content_one_row.cells[1]
+                        additional_technologies_header_cell.text = ""
+                        additional_technologies_cell.text = ""
+                        additional_technologies_merge_cell.merge(additional_technologies_cell)
+                        additional_technologies_merge_header_cell.merge(additional_technologies_header_cell)
+                    elif not additional_skills_cell.text:
+                        additional_skills_merge_header_cell = header_one_row.cells[1]
+                        additional_skills_header_cell = header_one_row.cells[2]
+                        additional_skills_merge_cell = content_one_row.cells[1]
+                        additional_skills_header_cell.text = ""
+                        additional_skills_cell.text = ""
+                        additional_skills_merge_cell.merge(additional_skills_cell)
+                        additional_skills_merge_header_cell.merge(additional_skills_header_cell)
+                elif self.entity_type == "admin":
+                    header_one_row = table.rows[1]
+                    content_one_row = table.rows[2]
+                    additional_skills_merge_header_cell = header_one_row.cells[0]
+                    additional_skills_header_cell = header_one_row.cells[1]
+                    additional_skills_merge_cell = content_one_row.cells[0]
+                    additional_skills_cell = content_one_row.cells[1]
+                    if not additional_skills_cell.text:
+                        additional_skills_header_cell.text = ""
+                        additional_skills_cell.text = ""
+                        additional_skills_merge_cell.merge(additional_skills_cell)
+                        additional_skills_merge_header_cell.merge(additional_skills_header_cell)
+
                 for row in table.rows:
                     for cell in row.cells:
                         for para in cell.paragraphs:
@@ -804,6 +855,7 @@ class DriveConverter:
                 self.service.files().delete(fileId=file["id"], supportsAllDrives=True).execute()
             except Exception as e:
                 pass
+            
     def convert_docx_to_pdf(self):
         if not self.drive_folder_url:
             drive_folder_id = self.create_google_drive_folder()
@@ -824,7 +876,6 @@ def cv_generator(crm_record_id):
     print(f"Starting CV Generation for CRM Record ID: {crm_record_id}")
     start_time = time.time()
     crm_record_handler = CrmEntity(crm_record_id)
-
     generation_error = ""
     try:
         drive_scopes = ["https://www.googleapis.com/auth/drive"]
@@ -859,7 +910,7 @@ def cv_generator(crm_record_id):
 
 # if __name__ == '__main__':
 #     cv_ids = [
-#         '1576533000413046226'
+#         '1576533000418327233'
 #     ]
 #     logs = {}
 #     counter = 0
