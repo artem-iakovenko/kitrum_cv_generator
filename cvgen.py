@@ -14,6 +14,15 @@ import traceback
 import io
 from googleapiclient.http import MediaIoBaseDownload
 
+
+def sort_key(item):
+    date_str = item['Finish_date']
+    if not date_str:
+        return (0, None)
+    dt = datetime.strptime(date_str, '%Y-%m-%d')
+    return (1, -dt.timestamp())
+
+
 TEMPLATE_IDS = {
     "admin": "1u4vUF1o8pWIxjl_zsJ3Yl1HKr-MJKCNC",
     "designer": "1nDdWHXT_vKgr5LkL87ioL4TJbvv6QVMX",
@@ -194,6 +203,8 @@ class CrmEntity:
 
         experience_cv = []
         work_experiences = self.crm_record_details['Work_Experience_CV']
+        work_experiences = sorted(work_experiences, key=sort_key)
+
         for work_experience in work_experiences:
             start_date = work_experience['Start_date']
             finish_date = work_experience['Finish_date']
@@ -237,6 +248,7 @@ class CrmEntity:
                 "project_responsibilities": project_responsibilities_cv,
                 "project_achievements": project_achievements_cv
             })
+
         education_cv = []
         certifications_cv = []
         educations = self.crm_record_details['Education_CV']
@@ -855,7 +867,7 @@ class DriveConverter:
                 self.service.files().delete(fileId=file["id"], supportsAllDrives=True).execute()
             except Exception as e:
                 pass
-            
+
     def convert_docx_to_pdf(self):
         if not self.drive_folder_url:
             drive_folder_id = self.create_google_drive_folder()
@@ -910,7 +922,7 @@ def cv_generator(crm_record_id):
 
 # if __name__ == '__main__':
 #     cv_ids = [
-#         '1576533000418327233'
+#         '1576533000404686944'
 #     ]
 #     logs = {}
 #     counter = 0
